@@ -31,7 +31,6 @@
       "-translate-x-1/2",
       "absolute",
       "bg-black",
-      "bg-red-100",
       "bg-red-20",
       "border",
       "border-gray-300",
