@@ -17,7 +17,7 @@ title = "Somebody Find Diego"
 
 [params.homepage]
   title = "Hey 👋 I'm Diego Amaral"
-  tagline = "Site Reliability Enginner"
+  tagline = "Site Reliability Engineer"
   description = "Here, you will find some links and basic info about me"
   contact = "https://www.linkedin.com/in/amaraldude/"
 
@@ -30,17 +30,17 @@ title = "Somebody Find Diego"
 
 [[params.homepage.resume.work]]
   name = "C6 Bank"
-  role = "Site Reliability Enginner Specialist"
+  role = "Site Reliability Engineer Specialist"
   duration = "Mar 2022 - Feb 2023"
 
 [[params.homepage.resume.work]]
   name = "Itaú Unibanco"
-  role = "Site Reliability Enginner"
+  role = "Site Reliability Engineer"
   duration = "Feb 2021 - Mar 2022"
 
 [[params.homepage.resume.work]]
   name = "Tembici"
-  role = "DevOps Enginner"
+  role = "DevOps Engineer"
   duration = "Feb 2020 - Feb 2021"
 
 [[params.homepage.resume.courses]]
