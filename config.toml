@@ -58,7 +58,6 @@ title = "Somebody Find Diego"
   github = "https://github.com/dgoscn"
   medium = "https://medium.com/@dgoscn"
   twitter = "https://twitter.com/dgoscn"
-  instagram = "https://instagram.com/diego.amrl"
 
 [build]
   writeStats = true
