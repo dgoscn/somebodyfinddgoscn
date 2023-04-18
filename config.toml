@@ -19,7 +19,7 @@ title = "Somebody Find Diego"
   title = "Hey 👋 I'm Diego Amaral"
   tagline = "Site Reliability Engineer"
   description = "Here, you will find some links and basic info about me"
-  contact = "https://www.linkedin.com/in/amaraldude/"
+  contact = "https://dgoscn.simple.ink/"
 
 [params.homepage.codepen]
   username = "apvarun"
