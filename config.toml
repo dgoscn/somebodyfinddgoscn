@@ -1,6 +1,6 @@
 theme = "showfolio"
 languageCode = "en-us"
-baseurl = "http://dgoscn.com/"
+baseurl = "https://dgoscn.github.io/somebodyfinddgoscn/"
 title = "Somebody Find Diego"
 
 
