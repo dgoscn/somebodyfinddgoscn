@@ -31,17 +31,47 @@ title = "Somebody Find Diego"
 [[params.homepage.resume.work]]
   name = "C6 Bank"
   role = "Site Reliability Engineer Specialist"
-  duration = "Mar 2022 - Feb 2023"
+  duration = "2022 - 2023"
 
 [[params.homepage.resume.work]]
   name = "Itaú Unibanco"
   role = "Site Reliability Engineer"
-  duration = "Feb 2021 - Mar 2022"
+  duration = "2021 - 2022"
 
 [[params.homepage.resume.work]]
   name = "Tembici"
   role = "DevOps Engineer"
-  duration = "Feb 2020 - Feb 2021"
+  duration = "2020 - 2021"
+
+[[params.homepage.resume.work]]
+  name = "Levoo"
+  role = "Software Engineer"
+  duration = "2019 - 2020"
+
+[[params.homepage.resume.work]]
+  name = "MRV Engenharia"
+  role = "Software Engineer Consultant"
+  duration = "2018 - 2019"
+
+[[params.homepage.resume.work]]
+  name = "UFRN"
+  role = "Professor Assistant in Security and Computer Networks"
+  duration = "2017 - 2018"
+
+[[params.homepage.resume.work]]
+  name = "RNP"
+  role = "System Administrator Intern"
+  duration = "2016 - 2018"
+
+[[params.homepage.resume.work]]
+  name = "RoboEduc"
+  role = "Educational Robotics Teacher"
+  duration = "2014"
+
+[[params.homepage.resume.work]]
+  name = "4Soft Jr"
+  role = "Software Engineer Intern"
+  duration = "2014"
 
 [[params.homepage.resume.courses]]
   name = "Bsc Information Technology - Computer Science"
