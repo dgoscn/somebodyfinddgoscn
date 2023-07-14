@@ -29,6 +29,11 @@ title = "Somebody Find Diego"
   skills = ["AWS", "Kubernetes", "Terraform", "CI/CD", "OpenTelemetry", "Golang", "Distributed Tracing", "Prometheus", "Leadership", "Product Management", "Open source contributor"]
 
 [[params.homepage.resume.work]]
+  name = "PicPay"
+  role = "Site Reliability Engineer Specialist"
+  duration = "2023 - Current"
+
+[[params.homepage.resume.work]]
   name = "C6 Bank"
   role = "Site Reliability Engineer Specialist"
   duration = "2022 - 2023"
