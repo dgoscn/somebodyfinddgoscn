@@ -16,7 +16,7 @@ title = "Somebody Find Diego"
   favicon = "favicon.ico"
 
 [params.homepage]
-  title = "Hey 👋 I'm Diego Amaral"
+  title = "Hey I'm Diego Amaral"
   tagline = "Site Reliability Engineer"
   description = "Here, you will find some links and basic info about me"
   contact = "https://dgooscn.thesimple.ink/"
