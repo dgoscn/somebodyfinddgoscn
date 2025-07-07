@@ -1,0 +1,7 @@
+  volumeMounts:
+    - name: file-storage
+      mountPath: /var/lib/otelcol/file_storage
+
+  volumes:
+    - name: file-storage
+      emptyDir: {}
