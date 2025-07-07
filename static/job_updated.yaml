@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: otlp-generator-job
+  namespace: monitoring
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: python-generator
+          image: python:3.11-slim
+          command: ["sh", "-c"]
+          args:
+            - "pip install requests && python3 /app/send_metric.py --count 20 --interval 0.5"
+          volumeMounts:
+            - name: script-volume
+              mountPath: /app
+      volumes:
+        - name: script-volume
+          configMap:
+            name: otlp-generator-script
