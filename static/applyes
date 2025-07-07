@@ -1,0 +1,7 @@
+kubectl create secret generic coralogix-secret \
+  --from-literal=private_key=xxxxx-xxxxx-xxxxx \
+  -n monitoring
+
+kubectl apply -f wafmetrics-collector-coralogix.yaml -n monitoring
+
+kubectl logs -l app.kubernetes.io/name=wafmetrics -n monitoring
