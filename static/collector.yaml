@@ -1,0 +1,61 @@
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: wafmetrics
+  labels:
+    app.kubernetes.io/name: wafmetrics
+spec:
+  mode: deployment
+  image: otel/opentelemetry-collector-contrib:0.102.1
+  replicas: 1
+  serviceAccount: opentelemetry-collectors
+  env:
+    - name: CORALOGIX_PRIVATE_KEY
+      valueFrom:
+        secretKeyRef:
+          name: coralogix-secret
+          key: private_key
+  resources:
+    limits:
+      memory: 256Mi
+      cpu: 500m
+    requests:
+      memory: 128Mi
+      cpu: 100m
+  config:
+    extensions:
+      health_check:
+        endpoint: "${env:MY_POD_IP}:13133"
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    exporters:
+      coralogix:
+        application_name: wafmetrics-dev
+        subsystem_name: waf-test
+        domain: private.coralogix.com
+        private_key: ${env:CORALOGIX_PRIVATE_KEY}
+        metrics:
+          headers:
+            Authorization: Bearer ${env:CORALOGIX_PRIVATE_KEY}
+        sending_queue:
+          enabled: true
+          num_consumers: 4
+          queue_size: 10000
+          storage: file_storage/sending_queue
+        timeout: 5s
+      debug:
+        verbosity: detailed
+    processors:
+      batch: {}
+    service:
+      telemetry:
+        logs:
+          level: debug
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [coralogix, debug]
