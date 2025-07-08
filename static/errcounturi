@@ -1,0 +1,1 @@
+sum by (uri)(waf_request_count{status=~"5.."}[1d])
