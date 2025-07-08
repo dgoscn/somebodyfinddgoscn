@@ -1,0 +1,7 @@
+sum by (status)(
+  waf_request_count{
+    host="api.dlocal.com",
+    uri=~"/|/api_curl|/cards|/checkout|/currency-exchanges|/customers|/gmf|/gmf-apm|/https%3a/pay.dlocal.com/|/installments-plans|/ipn|/login|/orders|/payments|/payments-methods|/payouts|/refunds|/sandbox-tools|/secure_cards|/secure_payments|/threeds|/webhook|/webhook-accounts",
+    status=~"200|201|204|301|302|304|307|308|400|401|403|404|405|408|431|500|502|503|504"
+  }[30d]
+)
