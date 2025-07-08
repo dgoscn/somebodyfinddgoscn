@@ -1,0 +1,7 @@
+100 * sum by (uri) (
+  wafmetrics{host=~"api\.dlocal\.com|api-certs\.dlocal\.com", status=~"5..", uri=~"/payouts|/payments-methods|/payments|/secure_payments|/refunds|/orders|/currency-exchanges"}
+)
+/
+sum by (uri) (
+  wafmetrics{host=~"api\.dlocal\.com|api-certs\.dlocal\.com", uri=~"/payouts|/payments-methods|/payments|/secure_payments|/refunds|/orders|/currency-exchanges"}
+)
