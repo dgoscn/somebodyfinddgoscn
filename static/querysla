@@ -1,0 +1,5 @@
+100 - (
+  sum(waf_request_count{status=~"5..", host=~"api\.dlocal\.com|api-certs\.dlocal\.com", uri=~"/payouts|/payments-methods|/secure_payments|/refunds|/orders|/currency-exchanges"})
+  /
+  sum(waf_request_count{host=~"api\.dlocal\.com|api-certs\.dlocal\.com", uri=~"/payouts|/payments-methods|/secure_payments|/refunds|/orders|/currency-exchanges"})
+) * 100
