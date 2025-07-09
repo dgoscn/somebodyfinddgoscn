@@ -1,0 +1,9 @@
+100 - (
+  sum by (uri) (
+    increase(wafmetrics{uri=~"/payouts|/payments-methods|/secure_payments|/refunds|/orders|/currency-exchanges", status=~"5.."}[30d])
+  )
+  /
+  sum by (uri) (
+    increase(wafmetrics{uri=~"/payouts|/payments-methods|/secure_payments|/refunds|/orders|/currency-exchanges"}[30d])
+  )
+) * 100
