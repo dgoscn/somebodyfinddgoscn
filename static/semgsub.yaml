@@ -1,0 +1,36 @@
+filter {
+  prune {
+    whitelist_names => ["message"]
+  }
+
+  json {
+    source => "message"
+  }
+
+  if [blocked] == "true" {
+    drop { }
+  }
+
+  mutate {
+    remove_field => ["anything_else", "debug_timing", "tags", "browser_info", "profiler"]
+  }
+
+  if ![host] =~ /^api\\.(.*)\\.dlocal\\.com$/ {
+    drop { }
+  }
+
+  translate {
+    field => "host"
+    destination => "host_normalized"
+    dictionary_path => "/usr/share/logstash/patterns/hosts.yml"
+    fallback => "unknown"
+  }
+
+  mutate {
+    lowercase => ["uri"]
+  }
+
+  if [uri] =~ /\\/accounts\\/[0-9a-zA-Z]+/ {
+    mutate { replace => { "uri" => "/accounts" } }
+  }
+}
