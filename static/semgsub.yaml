@@ -15,7 +15,7 @@ filter {
     remove_field => ["anything_else", "debug_timing", "tags", "browser_info", "profiler"]
   }
 
-  if !([host] =~ /^api\\.(.*)\\.dlocal\\.com$/) {
+  if (![host]) {
     drop { }
   }
 
