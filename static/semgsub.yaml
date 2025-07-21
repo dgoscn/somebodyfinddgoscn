@@ -15,7 +15,7 @@ filter {
     remove_field => ["anything_else", "debug_timing", "tags", "browser_info", "profiler"]
   }
 
-  if ![host] =~ /^api\\.(.*)\\.dlocal\\.com$/ {
+  if !([host] =~ /^api\\.(.*)\\.dlocal\\.com$/) {
     drop { }
   }
 
@@ -31,6 +31,8 @@ filter {
   }
 
   if [uri] =~ /\\/accounts\\/[0-9a-zA-Z]+/ {
-    mutate { replace => { "uri" => "/accounts" } }
+    mutate {
+      replace => { "uri" => "/accounts" }
+    }
   }
 }
