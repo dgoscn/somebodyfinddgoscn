@@ -1,31 +1,19 @@
-version: '3.7'
+version: '3.8'
 
 services:
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.17.13
-    container_name: logstash
-    volumes:
-      - ./pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-      - ./dictionaries:/usr/share/logstash/dictionaries:ro
+    image: docker.elastic.co/logstash/logstash:8.13.4
     ports:
-      - "5044:5044" # Beats input
-    environment:
-      - LS_JAVA_OPTS=-Xms256m -Xmx256m
-    command: logstash -f /usr/share/logstash/pipeline/logstash.conf --config.reload.automatic
+      - "5044:5044" # Porta para o Beats input
+    volumes:
+      - ./pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./dictionaries:/usr/share/logstash/dictionaries
     depends_on:
       - filebeat
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:7.17.13
-    container_name: filebeat
-    user: root  
+    image: docker.elastic.co/beats/filebeat:8.13.4
+    user: root
     volumes:
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    depends_on:
-      - logstash
-
-networks:
-  default:
-    name: wafmetrics-local-net
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./logs:/var/log/wafmetrics
