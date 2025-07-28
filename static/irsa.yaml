@@ -1,0 +1,146 @@
+---
+# ServiceAccount com IRSA para Filebeat
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat-irsa
+  namespace: observability
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/FilebeatSQSAccessRole
+---
+# ConfigMap do Filebeat
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: observability
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+      - type: aws-s3
+        queue_url: https://sqs.us-east-1.amazonaws.com/123456789012/cloudflare-logs-queue
+        visibility_timeout: 300s
+        access_key_id: ''
+        secret_access_key: ''
+        file_selectors:
+          - regex: ".*"
+
+    output.logstash:
+      hosts: ["logstash:5044"]
+
+    logging:
+      level: debug
+      to_files: true
+      files:
+        path: /var/log/filebeat
+        name: filebeat
+        keepfiles: 7
+        permissions: 0644
+---
+# Deployment do Filebeat
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filebeat
+  namespace: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: filebeat
+  template:
+    metadata:
+      labels:
+        app: filebeat
+    spec:
+      serviceAccountName: filebeat-irsa
+      containers:
+        - name: filebeat
+          image: docker.elastic.co/beats/filebeat:7.17.12
+          args: ["-c", "/etc/filebeat/filebeat.yml", "-e"]
+          volumeMounts:
+            - name: config
+              mountPath: /etc/filebeat
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: filebeat-config
+---
+# ConfigMap do Logstash
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+  namespace: observability
+data:
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+    }
+    filter {
+      json {
+        source => "message"
+        skip_on_invalid_json => true
+      }
+      translate {
+        field => "[x-login]"
+        destination => "[merchant_id]"
+        dictionary_path => "/usr/share/logstash/dictionaries/x-login.yaml"
+        fallback => "unknown"
+      }
+    }
+    output {
+      stdout {
+        codec => rubydebug
+      }
+    }
+---
+# Deployment do Logstash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+  namespace: observability
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      containers:
+        - name: logstash
+          image: docker.elastic.co/logstash/logstash:7.17.12
+          ports:
+            - containerPort: 5044
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/logstash/pipeline/logstash.conf
+              subPath: logstash.conf
+            - name: dictionary
+              mountPath: /usr/share/logstash/dictionaries/x-login.yaml
+              subPath: x-login.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: logstash-config
+        - name: dictionary
+          configMap:
+            name: wafmetrics-dictionaries
+---
+# ConfigMap com dicionário (exemplo)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wafmetrics-dictionaries
+  namespace: observability
+data:
+  x-login.yaml: |
+    abc123: merchant_foo
+    def456: merchant_bar
