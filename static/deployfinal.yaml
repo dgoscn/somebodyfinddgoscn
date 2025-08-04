@@ -1,0 +1,166 @@
+---
+# ConfigMap com a configuração do Filebeat
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config-irsa
+  namespace: monitoring
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+      - type: aws-s3
+        queue_url: https://sqs.eu-west-1.amazonaws.com/508670548435/eu1-mgmt-secure-waflogs-cloudflare-sqsls
+        visibility_timeout: 300s
+
+    output.logstash:
+      hosts: ["logstash-irsa.monitoring.svc.cluster.local:5044"]
+
+    logging:
+      level: debug
+      to_files: true
+      files:
+        path: /var/log/filebeat
+        name: filebeat
+        keepfiles: 7
+        permissions: 0644
+---
+# ConfigMap com o dicionário de merchants
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wafmetrics-dictionaries-irsa
+  namespace: monitoring
+data:
+  x-login.yaml: |
+    abc123: merchant_foo
+    def456: merchant_bar
+    # ... (mais linhas do seu dicionário real)
+---
+# ConfigMap com a configuração do Logstash
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config-irsa
+  namespace: monitoring
+data:
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+    }
+
+    filter {
+      json {
+        source => "message"
+        target => "cf"
+        skip_on_invalid_json => true
+        add_tag => ["json_parsed"]
+      }
+
+      if "_jsonparsefailure" not in [tags] {
+        mutate {
+          add_field => {
+            "merchant_candidate_1" => "%{[cf][ClientRequestPath]}"
+            "merchant_candidate_2" => "%{[cf][ClientRequestURI]}"
+            "merchant_candidate_3" => "%{[cf][ClientRequestHeaders][x-merchant-id]}"
+          }
+        }
+
+        ruby {
+          code => '
+            fields = [event.get("merchant_candidate_3"), event.get("merchant_candidate_2"), event.get("merchant_candidate_1")]
+            merchant_id = fields.compact.find { |v| v && !v.empty? && v != "-" }
+            event.set("merchant_id", merchant_id) if merchant_id
+          '
+        }
+
+        translate {
+          dictionary_path => "/usr/share/logstash/dictionaries/x-login.yaml"
+          field           => "merchant_id"
+          destination     => "merchant_name"
+          fallback        => "unknown"
+        }
+
+        if ![merchant_id] {
+          mutate {
+            add_field => { "merchant_id" => "unknown" }
+          }
+        }
+      }
+
+      if "_jsonparsefailure" in [tags] {
+        drop { }
+      }
+    }
+
+    output {
+      http {
+        url => "http://otel-collector.monitoring:4318/v1/logs"
+        http_method => "post"
+        format => "json"
+        content_type => "application/json"
+      }
+    }
+---
+# Deployment do Logstash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash-irsa
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      containers:
+        - name: logstash
+          image: docker.elastic.co/logstash/logstash:7.17.12
+          ports:
+            - containerPort: 5044
+          env:
+            - name: LS_HEAP_SIZE
+              value: "2g"
+          volumeMounts:
+            - name: config
+              mountPath: /usr/share/logstash/pipeline/logstash.conf
+              subPath: logstash.conf
+            - name: dictionary
+              mountPath: /usr/share/logstash/dictionaries/x-login.yaml
+              subPath: x-login.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: logstash-config-irsa
+        - name: dictionary
+          configMap:
+            name: wafmetrics-dictionaries-irsa
+---
+# Service do Logstash
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash-irsa
+  namespace: monitoring
+spec:
+  ports:
+    - protocol: TCP
+      port: 5044
+      targetPort: 5044
+  selector:
+    app: logstash
+---
+# ServiceAccount (se necessário, descomente se não estiver usando IRSA já atribuído)
+# apiVersion: v1
+# kind: ServiceAccount
+# metadata:
+#   name: filebeat-irsa
+#   namespace: monitoring
+#   annotations:
+#     eks.amazonaws.com/role-arn: arn:aws:iam::508670548435:role/dlocal_waflogs_sqsls_role
