@@ -9,7 +9,7 @@ data:
   filebeat.yml: |
     filebeat.inputs:
       - type: aws-s3
-        queue_url: https://sqs.eu-west-1.amazonaws.com/508670548435/eu1-mgmt-secure-waflogs-cloudflare-sqsls
+       
         visibility_timeout: 300s
 
     output.logstash:
