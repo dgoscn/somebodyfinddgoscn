@@ -163,4 +163,3 @@ spec:
 #   name: filebeat-irsa
 #   namespace: monitoring
 #   annotations:
-#     eks.amazonaws.com/role-arn: arn:aws:iam::508670548435:role/dlocal_waflogs_sqsls_role
