@@ -1,0 +1,64 @@
+filter {
+  json {
+    source => "message"
+    target => "cf"
+    skip_on_invalid_json => true
+    add_tag => ["json_parsed"]
+  }
+
+  if "_jsonparsefailure" not in [tags] {
+    #
+    # Log temporário para inspecionar os headers antes de extrair
+    ruby {
+      code => '
+        headers = event.get("[cf][ClientRequestHeaders]")
+        logger.info("DEBUG HEADERS:", headers: headers)
+      '
+    }
+
+    # Normaliza os nomes das chaves de headers para minúsculas
+    ruby {
+      code => '
+        headers = event.get("[cf][ClientRequestHeaders]")
+        if headers.is_a?(Hash)
+          normalized = {}
+          headers.each { |k, v| normalized[k.to_s.downcase] = v }
+          event.set("[cf][ClientRequestHeaders]", normalized)
+        end
+      '
+    }
+
+    mutate {
+      add_field => {
+        "merchant_candidate_1" => "%{[cf][ClientRequestPath]}"
+        "merchant_candidate_2" => "%{[cf][ClientRequestURI]}"
+        "merchant_candidate_3" => "%{[cf][ClientRequestHeaders][x-merchant-id]}"
+      }
+    }
+
+    ruby {
+      code => '
+        fields = [event.get("merchant_candidate_3"), event.get("merchant_candidate_2"), event.get("merchant_candidate_1")]
+        merchant_id = fields.compact.find { |v| v && !v.empty? && v != "-" }
+        event.set("merchant_id", merchant_id) if merchant_id
+      '
+    }
+
+    translate {
+      dictionary_path => "/usr/share/logstash/dictionaries/x-login.yaml"
+      field           => "merchant_id"
+      destination     => "merchant_name"
+      fallback        => "unknown"
+    }
+
+    if ![merchant_id] {
+      mutate {
+        add_field => { "merchant_id" => "unknown" }
+      }
+    }
+  }
+
+  if "_jsonparsefailure" in [tags] {
+    drop { }
+  }
+}
