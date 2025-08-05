@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config-irsa
+  namespace: monitoring
+data:
+  logstash.conf: |
+    input {
+      beats { port => 5044 }
+    }
+
+    filter {
+      # Marca o recebimento para rastrear o fluxo
+      mutate { add_tag => ["stage_00_received"] }
+
+      # ===== JSON PARSE =====
+      json {
+        source => "message"
+        target => "cf"
+        skip_on_invalid_json => true
+        add_tag => ["json_parsed"]
+      }
+
+      # Se o parse falhar, NÃO derruba o evento: loga para inspeção
+      if "_jsonparsefailure" in [tags] {
+        mutate { add_tag => ["stage_01_json_failed"] }
+        ruby {
+          code => '
+            m = event.get("message")
+            m = m.is_a?(String) ? m[0,1000] : m
+            logger.warn("DEBUG JSON_FAIL: first_kb=#{m}")
+          '
+        }
+      }
+
+      # ===== DEBUG HEADERS =====
+      ruby {
+        code => '
+          headers = event.get("[cf][ClientRequestHeaders]")
+          if headers
+            logger.info("DEBUG HEADERS present keys=#{headers.keys}")
+            # descomente para ver tudo (pode ser muito verboso)
+            # logger.info("DEBUG HEADERS full=#{headers.inspect}")
+          else
+            logger.info("DEBUG HEADERS: none")
+          end
+        '
+      }
+
+      # ===== CANDIDATOS DE MERCHANT =====
+      mutate {
+        add_field => {
+          "merchant_candidate_1" => "%{[cf][ClientRequestPath]}"
+          "merchant_candidate_2" => "%{[cf][ClientRequestURI]}"
+          "merchant_candidate_3" => "%{[cf][ClientRequestHeaders][x-merchant-id]}"
+        }
+      }
+
+      # Escolha do merchant_id (prioridade: header > URI > PATH)
+      ruby {
+        code => '
+          fields = [
+            event.get("merchant_candidate_3"),
+            event.get("merchant_candidate_2"),
+            event.get("merchant_candidate_1")
+          ].compact
+          merchant_id = fields.find { |v| v && !v.empty? && v != "-" }
+          event.set("merchant_id", merchant_id || "unknown")
+          logger.info("DEBUG merchant_id chosen=#{event.get("merchant_id")}")
+        '
+      }
+
+      # ===== DICIONÁRIO (corrige deprecations: source/target) =====
+      translate {
+        dictionary_path => "/usr/share/logstash/dictionaries/x-login.yaml"
+        source          => "merchant_id"
+        target          => "merchant_name"
+        fallback        => "unknown"
+      }
+
+      mutate { add_tag => ["stage_02_translated"] }
+    }
+
+    output {
+      # DEBUG: imprime eventos completos no stdout do pod
+      stdout { codec => rubydebug { metadata => true } }
+
+      # Quando o collector estiver pronto, ative o HTTP abaixo e remova o stdout:
+      # http {
+      #   url          => "http://otel-collector.monitoring:4318/v1/logs"
+      #   http_method  => "post"
+      #   format       => "json"
+      #   content_type => "application/json"
+      # }
+    }
