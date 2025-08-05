@@ -9,7 +9,6 @@ data:
   filebeat.yml: |
     filebeat.inputs:
       - type: aws-s3
-        queue_url: https://sqs.eu-west-1.amazonaws.com/508670548435/eu1-mgmt-secure-waflogs-cloudflare-sqsls
         visibility_timeout: 300s
 
     output.logstash:
@@ -163,4 +162,3 @@ spec:
 #   name: filebeat-irsa
 #   namespace: monitoring
 #   annotations:
-#     eks.amazonaws.com/role-arn: arn:aws:iam::508670548435:role/dlocal_waflogs_sqsls_role
