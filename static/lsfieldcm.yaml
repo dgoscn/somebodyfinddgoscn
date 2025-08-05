@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config-irsa
+  namespace: monitoring
+data:
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+      }
+    }
+
+    filter {
+      json {
+        source => "message"
+        target => "cf"
+        skip_on_invalid_json => true
+        add_tag => ["json_parsed"]
+      }
+
+      if "_jsonparsefailure" not in [tags] {
+        mutate {
+          add_field => {
+            "merchant_candidate_1" => "%{[cf][ClientRequestPath]}"
+            "merchant_candidate_2" => "%{[cf][ClientRequestURI]}"
+            "merchant_candidate_3" => "%{[cf][ClientRequestHeaders][x-login]}"
+          }
+        }
+
+        ruby {
+          code => '
+            fields = [
+              event.get("merchant_candidate_3"), # x-login primeiro
+              event.get("merchant_candidate_2"), # URI
+              event.get("merchant_candidate_1")  # Path
+            ]
+            merchant_id = fields.compact.find { |v| v && !v.empty? && v != "-" }
+            event.set("merchant_id", merchant_id) if merchant_id
+          '
+        }
+
+        translate {
+          dictionary_path => "/usr/share/logstash/dictionaries/x-login.yaml"
+          field           => "merchant_id"
+          destination     => "merchant_name"
+          fallback        => "unknown"
+        }
+
+        if [merchant_name] and [merchant_name] != "unknown" {
+          mutate {
+            add_tag => ["stage_o3_enriched"]
+          }
+        }
+
+        if ![merchant_id] {
+          mutate {
+            add_field => { "merchant_id" => "unknown" }
+          }
+        }
+      }
+
+      if "_jsonparsefailure" in [tags] {
+        drop { }
+      }
+    }
+
+    output {
+      stdout { codec => rubydebug }
+      # http {
+      #   url => "http://otel-collector.monitoring:4318/v1/logs"
+      #   http_method => "post"
+      #   format => "json"
+      #   content_type => "application/json"
+      # }
+    }
