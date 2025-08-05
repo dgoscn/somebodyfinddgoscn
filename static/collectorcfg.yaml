@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config-irsa
+  namespace: monitoring
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      batch:
+        send_batch_size: 1024
+        timeout: 5s
+      attributes/add_cluster:
+        actions:
+          - key: k8s.cluster.name
+            value: eks-artint-use1-prd
+            action: insert
+
+    exporters:
+      logging:
+        loglevel: debug
+
+      # Coralogix exporter (descomente para ativar)
+      # otlphttp/coralogix:
+      #   endpoint: https://ingress.coralogix.com:443
+      #   headers:
+      #     "Authorization": "<YOUR_CORALOGIX_PRIVATE_KEY>"
+
+    service:
+      pipelines:
+        logs:
+          receivers: [otlp]
+          processors: [attributes/add_cluster, batch]
+          exporters: [logging] # troque para [otlphttp/coralogix] ao ativar
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector-irsa
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector-irsa
+  template:
+    metadata:
+      labels:
+        app: otel-collector-irsa
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.102.1
+          args: ["--config=/etc/otelcol/otel-collector-config.yaml"]
+          ports:
+            - containerPort: 4318
+          volumeMounts:
+            - name: otel-config
+              mountPath: /etc/otelcol
+      volumes:
+        - name: otel-config
+          configMap:
+            name: otel-collector-config-irsa
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector-irsa
+  namespace: monitoring
+spec:
+  ports:
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+  selector:
+    app: otel-collector-irsa
