@@ -1,28 +1,29 @@
 processors:
   transform/flatten_and_cleanup:
-    logs:
-      statements:
-        # Promove campos úteis para attributes
-        - set(attributes["cf_client_ip"], attributes["cf.ClientIP"])
-        - set(attributes["client_request_uri"], attributes["cf.ClientRequestURI"])
-        - set(attributes["x_login"], attributes["cf.RequestHeaders"]["x-login"])
-        - set(attributes["event_timestamp"], attributes["timestamp"]) # sem sobrescrever o campo timestamp
+    log_statements:
+      - context: log
+        statements:
+          # Promove campos úteis para attributes
+          - set(attributes["cf_client_ip"], attributes["cf.ClientIP"])
+          - set(attributes["client_request_uri"], attributes["cf.ClientRequestURI"])
+          - set(attributes["x_login"], attributes["cf.RequestHeaders"]["x-login"])
+          - set(attributes["event_timestamp"], attributes["timestamp"])
 
-        # Promove metadados AWS, K8s, Host
-        - set(attributes["s3_object_key"], attributes["aws.s3.object.key"])
-        - set(attributes["s3_bucket_name"], attributes["aws.s3.bucket.name"])
-        - set(attributes["k8s_cluster_name"], attributes["k8s.cluster.name"])
-        - set(attributes["host_name"], attributes["host.name"])
+          # Promove metadados AWS, K8s, Host
+          - set(attributes["s3_object_key"], attributes["aws.s3.object.key"])
+          - set(attributes["s3_bucket_name"], attributes["aws.s3.bucket.name"])
+          - set(attributes["k8s_cluster_name"], attributes["k8s.cluster.name"])
+          - set(attributes["host_name"], attributes["host.name"])
 
-        # Remove blocos após o flatten
-        - delete_key(attributes, "cf")
-        - delete_key(attributes, "aws")
-        - delete_key(attributes, "ecs")
-        - delete_key(attributes, "resource")
-        - delete_key(attributes, "timestamp")
-        - delete_key(attributes, "k8s.cluster.name")
-        - delete_key(attributes, "host.name")
-        - delete_key(attributes, "agent")
-        - delete_key(attributes, "log")
-        - delete_key(attributes, "input")
-        - delete_key(attributes, "tags")
+          # Remove blocos após o flatten
+          - delete_key(attributes, "cf")
+          - delete_key(attributes, "aws")
+          - delete_key(attributes, "ecs")
+          - delete_key(attributes, "resource")
+          - delete_key(attributes, "timestamp")
+          - delete_key(attributes, "k8s.cluster.name")
+          - delete_key(attributes, "host.name")
+          - delete_key(attributes, "agent")
+          - delete_key(attributes, "log")
+          - delete_key(attributes, "input")
+          - delete_key(attributes, "tags")
