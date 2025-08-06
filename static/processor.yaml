@@ -1,0 +1,22 @@
+  processors:
+    transform/flatten_and_cleanup:
+      logs:
+        statements:
+          # Flattenando campos úteis
+          - set(attributes["client_ip"], body["ClientIP"])
+          - set(attributes["client_country"], body["ClientCountry"])
+          - set(attributes["request_path"], body["ClientRequestPath"])
+          - set(attributes["merchant_id"], attributes["merchant_id"])
+          - set(attributes["merchant_name"], attributes["merchant_name"])
+
+          # Limpando ruído (com 2 argumentos, como esperado)
+          - delete_key(attributes, "cf")
+          - delete_key(attributes, "aws")
+          - delete_key(attributes, "ecs")
+          - delete_key(attributes, "resource")
+          - delete_key(attributes, "timestamp")
+          - delete_key(attributes, "host.name")
+          - delete_key(attributes, "agent")
+          - delete_key(attributes, "input")
+          - delete_key(attributes, "log")
+          - delete_key(attributes, "tags")
