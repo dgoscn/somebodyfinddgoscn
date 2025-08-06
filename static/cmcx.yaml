@@ -1,0 +1,52 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  transform/flatten_and_cleanup:
+    log_statements:
+      - context: log
+        statements:
+          # Remove campos Body duplicado ou desnecessário
+          - delete_key(body)
+          # Promove atributos para log.body
+          - set(body.cf_client_ip, attributes["cf.ClientIP"])
+          - set(body.client_request_uri, attributes["cf.ClientRequestURI"])
+          - set(body.x_login, attributes["cf.RequestHeaders"]["x-login"])
+          - set(body.timestamp, attributes["timestamp"])
+          # Flatten AWS
+          - set(resource.s3_object_key, attributes["aws.s3.object.key"])
+          - set(resource.s3_bucket_name, attributes["aws.s3.bucket.name"])
+          # Move metadata pro resource
+          - set(resource.k8s_cluster_name, attributes["k8s.cluster.name"])
+          - set(resource.host.name, attributes["host.name"])
+          # Ajuste de timestamp real
+          - set(timestamp, attributes["timestamp"])
+          # Remover os atributos duplicados depois do uso
+          - delete_key(attributes["cf"])
+          - delete_key(attributes["aws"])
+          - delete_key(attributes["timestamp"])
+          - delete_key(attributes["k8s.cluster.name"])
+          - delete_key(attributes["host.name"])
+          - delete_key(attributes["agent"])
+          - delete_key(attributes["log"])
+          - delete_key(attributes["input"])
+          - delete_key(attributes["tags"])
+
+exporters:
+  otlphttp/coralogix:
+    endpoint: https://ingress.coralogix.com/v1/logs
+    headers:
+      Authorization: 'Bearer <CORALOGIX_API_KEY>'
+    compression: gzip
+    tls:
+      insecure: false
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [transform/flatten_and_cleanup]
+      exporters: [otlphttp/coralogix]
